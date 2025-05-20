@@ -45,6 +45,99 @@ public abstract class StringCodify {
         MSK_NUMEROS, MSK_EXT_ACE, MSK_EXT_SYM
     };
     
+    // convierte str a str, excluyendo simbolos invalidos para codificacion
+    
+    public static String stringPrepare(String texto) {
+        // dado un texto, verifica que cada uno de sus simbolos pertenezca
+        // al espacio simbolico de este programa, excluyendo por ejemplo
+        // a los emoticones o caracteres especiales
+        String result = "";
+        String msk_all = String.join("", MSK_ALL);
+        char c;
+        for (int i = 0; i < texto.length(); i++) {
+            c = texto.charAt(i);
+            if (msk_all.contains(String.valueOf(c))) {
+                result += c;
+            }
+        }
+        return result;
+    }
+    
+    // convierten str a str, encriptando y desencriptando
+    
+    public static String stringEncrypt(String texto) {
+        // modifica la cadena para hacerla ilegible
+        // primero la pone al revez
+        texto = new StringBuilder(texto).reverse().toString();
+        // se usara un aleatorio para seleccionar chars de la mascara 0
+        Random rnd = new Random();
+        int maxRand = MSK_MIN_REC.length();
+        // msk_all contiene todos los simbolos en una sola cadena
+        String msk_all = String.join("", MSK_ALL);
+        String result = "";
+        char c;
+        int ind;
+        short count = 0;
+        // recorre todos los chars de el texto original
+        for (int i = 0; i < texto.length(); i++) {
+            // primero desplaza el char +1 en la lista de simbolos
+            c = texto.charAt(i);
+            ind = msk_all.indexOf(c);
+            if (ind == msk_all.length() - 1) {
+                result += msk_all.charAt(0);
+            }
+            else {
+                result += msk_all.charAt(ind + 1);
+            }
+            // luego agrega simbolos basura, en cantidades crecientes
+            // pero oscilantes para no agregar demasiada basura
+            // 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1...
+            count++;
+            for (int r = 0; r < count; r++) {
+                result += MSK_MIN_REC.charAt(rnd.nextInt(maxRand));
+            }
+            if (count >= 4) {
+                count = 0;
+            }
+        }
+        return result;
+    }
+    
+    public static String stringDecrypt(String texto) {
+        // dada una cadena ilegible le aplica el proceso inverso
+        String msk_all = String.join("", MSK_ALL);
+        String result = "";
+        char c;
+        int ind;
+        short count = 0;
+        // para cada char de la cadena ilegible hara dos cosas
+        for (int i = 0; i < texto.length(); i++) {
+            // movera el char importante (no basura) a la izquierda -1
+            // en la lista de caracteres global
+            c = texto.charAt(i);
+            ind = msk_all.indexOf(c);
+            if (ind == 0) {
+                result += msk_all.charAt(msk_all.length() - 1);
+            }
+            else {
+                result += msk_all.charAt(ind - 1);
+            }
+            // hara el mismo conteo de la encriptacion pero esta vez
+            // saltandose esos chars basura, esto adelante el for i++
+            count++;
+            for (int r = 0; r < count; r++) {
+                i++;
+            }
+            if (count >= 4) {
+                count = 0;
+            }
+        }
+        // al final la voltea al revez
+        return new StringBuilder(result).reverse().toString();
+    }
+    
+    // convierten mensaje str a codgo 4bit, y su operacion inversa
+    
     public static short[] stringToCode(String texto, boolean compress) {
         // principal algoritmo, es quien codifica y comprime los textos
         // eliminara chars invalidos como son emoticones, etc
@@ -128,21 +221,10 @@ public abstract class StringCodify {
         return texto;
     }
     
-    public static String codeToPrint(short[] code, String separador) {
-        // convierte los numeros de 4 bits en una cadena de texto
-        // separada por un simbolo parametrico
-        String texto = "";
-        if (separador.isEmpty()) {
-            separador = " ";
-        }
-        for (short n: code) {
-            texto += separador + n;
-        }
-        return texto + separador;
-    }
+    // convierten codigo 4bit a codigo 8bit(char), y su operacion inversa
     
     public static char[] codeToChars(short[] code) {
-        // los codigos obtenidos son valores de 4 bits, pero un buffer
+        // los codigos ingresados son valores de 4 bits, pero un buffer
         // guarda bytes (8 bits) lo que se hace aqui es ensamblarlos
         // el buffer tendra la mitad de talla que el array de codigos
         char[] buffer = new char[(int)Math.ceil(code.length / 2.0f)];
@@ -161,6 +243,100 @@ public abstract class StringCodify {
         return buffer;
     }
     
+    public static short[] charsToCode(char[] code) {
+        // dados codigos de 8 bits, se partiran a la mitad para obtener
+        // un codigo el doble de largo, con valores de 4 bits, primero
+        // se ve si debe ser la mitad exacta o si los ultimos 4 bits sobran
+        short[] buffer;
+        if (code[code.length - 1] == 0) {
+            buffer = new short[code.length * 2 - 1];
+        }
+        else {
+            buffer = new short[code.length * 2];
+        }
+        // ciclicamente, se recorre el codigo 8 bits y se va paritendo a
+        // la mitad, k avanza al doble de velocidad, pero trunca si es impar
+        int k = 0;
+        for (int i = 0; i < code.length; i++) {
+            buffer[k] = (short)(code[i] >> 4);
+            if (k >= buffer.length - 1) {
+                break;
+            }
+            buffer[k + 1] = (short)(code[i] & 15);
+            k += 2;
+        }
+        return buffer;
+    }
+    
+    // convierten arrays de 4 u 8 bits a str, y su operacion inversa
+    
+    public static String arrayToString(char[] code, String separador) {
+        // convierte los numeros de 8 bits en una cadena de texto
+        // separada por un simbolo parametrico
+        String texto = "";
+        if (separador.isEmpty()) {
+            separador = " ";
+        }
+        // recorre los valores en el array y los va concatenando
+        for (char n: code) {
+            texto += separador + (int)n;
+        }
+        return texto + separador;
+    }
+    
+    public static String arrayToString(short[] code, String separador) {
+        // convierte los numeros de 4 bits en una cadena de texto
+        // separada por un simbolo parametrico
+        String texto = "";
+        if (separador.isEmpty()) {
+            separador = " ";
+        }
+        // recorre los valores en el array y los va concatenando
+        for (short n: code) {
+            texto += separador + n;
+        }
+        return texto + separador;
+    }
+    
+    public static Object stringToArray(String texto, String separador,
+            boolean isToChars) {
+        // dado un texto que esta constituido por valores numericos separados
+        // por un simbolo, convierte eso en el array numerico correspondiente
+        if (separador.isEmpty()) {
+            separador = " ";
+        }
+        // primero debe romper la str en un array, pero evitara valores vacios
+        String[] data = texto.split(separador);
+        String redata = "";
+        for (int i = 0; i < data.length; i++) {
+            if (!data[i].isEmpty()) {
+                redata += data[i];
+                if (i < data.length - 1) {
+                    redata += " ";
+                }
+            }
+        }
+        data = redata.split(" ");
+        // lego recorrera el str array para agregar sus valores convertidos
+        // a numericos, en el correspondiente array segun se requiera
+        if (isToChars) {
+            char[] buffer = new char[data.length];
+            for (int i = 0; i < data.length; i++) {
+                buffer[i] = (char)Integer.parseInt(data[i]);
+            }
+            return buffer;
+        }
+        else {
+            short[] buffer = new short[data.length];
+            for (int i = 0; i < data.length; i++) {
+                buffer[i] = (short)Integer.parseInt(data[i]);
+            }
+            return buffer;
+        }
+    }
+    
+    // convierte str en array chars, y su operacion inversa
+    
     public static char[] stringToChars(String texto) {
         // desglosa una cadena en un array de simbolos (chars)
         char[] buffer = new char[texto.length()];
@@ -168,105 +344,12 @@ public abstract class StringCodify {
         return buffer;
     }
     
-    public static String charsToPrint(char[] code, String separador) {
-        // devuelve una cadena donde los numeros que representan
-        // un simbolo char, son mostrados crudamente, separados por simbolo
-        String texto = "";
-        if (separador.isEmpty()) {
-            separador = " ";
-        }
-        for (char n: code) {
-            texto += separador + (short)n;
-        }
-        return texto + separador;
+    public static String charsToString(char[] codigo) {
+        // concatena los simbolos del array de chars en una str
+        return new String(codigo);
     }
     
-    public static String stringPrepare(String texto) {
-        // dado un texto, verifica que cada uno de sus simbolos pertenezca
-        // al espacio simbolico de este programa, excluyendo por ejemplo
-        // a los emoticones o caracteres especiales
-        String result = "";
-        String msk_all = String.join("", MSK_ALL);
-        char c;
-        for (int i = 0; i < texto.length(); i++) {
-            c = texto.charAt(i);
-            if (msk_all.contains(String.valueOf(c))) {
-                result += c;
-            }
-        }
-        return result;
-    }
-    
-    public static String stringEncrypt(String texto) {
-        // modifica la cadena para hacerla ilegible
-        // primero la pone al revez
-        texto = new StringBuilder(texto).reverse().toString();
-        // se usara un aleatorio para seleccionar chars de la mascara 0
-        Random rnd = new Random();
-        int maxRand = MSK_MIN_REC.length();
-        // msk_all contiene todos los simbolos en una sola cadena
-        String msk_all = String.join("", MSK_ALL);
-        String result = "";
-        char c;
-        int ind;
-        short count = 0;
-        // recorre todos los chars de el texto original
-        for (int i = 0; i < texto.length(); i++) {
-            // primero desplaza el char +1 en la lista de simbolos
-            c = texto.charAt(i);
-            ind = msk_all.indexOf(c);
-            if (ind == msk_all.length() - 1) {
-                result += msk_all.charAt(0);
-            }
-            else {
-                result += msk_all.charAt(ind + 1);
-            }
-            // luego agrega simbolos basura, en cantidades crecientes
-            // pero oscilantes para no agregar demasiada basura
-            // 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1...
-            count++;
-            for (int r = 0; r < count; r++) {
-                result += MSK_MIN_REC.charAt(rnd.nextInt(maxRand));
-            }
-            if (count >= 4) {
-                count = 0;
-            }
-        }
-        return result;
-    }
-    
-    public static String stringDecrypt(String texto) {
-        // dada una cadena ilegible le aplica el proceso inverso
-        String msk_all = String.join("", MSK_ALL);
-        String result = "";
-        char c;
-        int ind;
-        short count = 0;
-        // para cada char de la cadena ilegible hara dos cosas
-        for (int i = 0; i < texto.length(); i++) {
-            // movera el char importante (no basura) a la izquierda -1
-            // en la lista de caracteres global
-            c = texto.charAt(i);
-            ind = msk_all.indexOf(c);
-            if (ind == 0) {
-                result += msk_all.charAt(msk_all.length() - 1);
-            }
-            else {
-                result += msk_all.charAt(ind - 1);
-            }
-            // hara el mismo conteo de la encriptacion pero esta vez
-            // saltandose esos chars basura, esto adelante el for i++
-            count++;
-            for (int r = 0; r < count; r++) {
-                i++;
-            }
-            if (count >= 4) {
-                count = 0;
-            }
-        }
-        // al final la voltea al revez
-        return new StringBuilder(result).reverse().toString();
-    }
+    // obtencion de informacion privada para codificacion
     
     private static short[] getMskInfo(char simbol) {
         // retorna [ind de MSK_ALL, ind de char en msk]
@@ -368,8 +451,49 @@ public abstract class StringCodify {
         return 0;
     }
     
+    // herramientas de uso compacto, facil uso
+    
+    public static String mensajeToCodestr(String msj) {
+        short[] code4 = stringToCode(msj, true);
+        char[] code8 = codeToChars(code4);
+        return charsToString(code8);
+    }
+    
+    public static String mensajeToCodenum(String msj) {
+        short[] code4 = stringToCode(msj, true);
+        char[] code8 = codeToChars(code4);
+        return arrayToString(code8, "");
+    }
+    
+    public static String codestrToMensaje(String code) {
+        char[] code8 = stringToChars(code);
+        short[] code4 = charsToCode(code8);
+        return codeToString(code4);
+    }
+    
+    public static String codenumToMensaje(String code) {
+        char[] code8 = (char[])stringToArray(code, "", true);
+        short[] code4 = charsToCode(code8);
+        return codeToString(code4);
+    }
+    
+    public static float getCompresion(String msj, boolean isPrint) {
+        // retorna la relacion porcentual de la talla inicial y final de msj
+        short[] code4 = stringToCode(msj, true);
+        char[] code8 = codeToChars(code4);
+        float res = (float)code8.length / Math.max(1f, msj.length());
+        if (isPrint) {
+            float r = Math.round(res * 10000f) / 100f;
+            System.out.println("-> Compresión: " + r + " %");
+        }
+        return res;
+    }
+    
+    // metodos extra, como demostraciones, no son importantes para la clase
+    
     public static void demo() {
-        // pone a prueba las capacidades del software, ejemplifica
+        // pone a prueba las capacidades del software, ejemplifica el
+        // proceso, no utiliza las herramientas compactas
         // obtener el texto a tratar, si vacio se pondra uno demo
         Scanner sc = new Scanner(System.in);
         System.out.println("...Demo...Str2Cod...\n"
@@ -395,7 +519,7 @@ public abstract class StringCodify {
         System.out.println("-> texto original:\n" + msj);
         
         // opcionalmente, encriptarlo
-        float peso = StringCodify.stringToChars(msj).length;
+        float peso = stringToChars(msj).length;
         System.out.println("-> escribe 1 si deseas encriptar:");
         boolean encrypt = !sc.nextLine().isEmpty();
         String msjc = msj;
@@ -408,32 +532,32 @@ public abstract class StringCodify {
         }
         
         // pinta informacion del mensaje
-        char[] crudoOrigi = StringCodify.stringToChars(msjc);
+        char[] crudoOrigi = stringToChars(msjc);
         float estadisticas = crudoOrigi.length;
-        String strNumOriginal = StringCodify.charsToPrint(crudoOrigi, "");
+        String strNumOriginal = arrayToString(crudoOrigi, "");
         System.out.println("-> valores bytes:\n" + strNumOriginal);
         System.out.println("-> longitud bytes:\n" + crudoOrigi.length);
         
         // convertir a codigo no compacto
-        short[] code = StringCodify.stringToCode(msjc, false);
-        String codeStr = StringCodify.codeToPrint(code, "");
+        short[] code = stringToCode(msjc, false);
+        String codeStr = arrayToString(code, "");
         System.out.println("...\n-> codificado sin compresión...\n"
                 + "-> valores 4 bits:\n" + codeStr);
         System.out.println("-> longitud 4 bits:\n" + code.length);
         
         // convertir a codigo compacto
-        code = StringCodify.stringToCode(msjc, true);
-        codeStr = StringCodify.codeToPrint(code, "");
+        code = stringToCode(msjc, true);
+        codeStr = arrayToString(code, "");
         System.out.println("...\n-> codificado con compresión...\n"
                 + "-> valores 4 bits:\n" + codeStr);
         System.out.println("-> longitud 4 bits:\n" + code.length);
         
         // pintar informacion de la compresion
-        char[] crudoFin = StringCodify.codeToChars(code);
+        char[] crudoFin = codeToChars(code);
         estadisticas = (crudoFin.length / estadisticas) * 100.0f;
         estadisticas = (float)Math.round(estadisticas * 100.0f) / 100.0f;
-        String strNumFinal = StringCodify.charsToPrint(crudoFin, "");
-        System.out.println("-> texto final:\n" + new String(crudoFin));
+        String strNumFinal = arrayToString(crudoFin, "");
+        System.out.println("-> texto final:\n" + charsToString(crudoFin));
         System.out.println("-> valores bytes:\n" + strNumFinal);
         System.out.println("-> longitud bytes:\n" + crudoFin.length);
         System.out.println("-> nivel de compresión:\n" + estadisticas + " %");
@@ -444,7 +568,9 @@ public abstract class StringCodify {
         }
         
         // demostracion decodificacion
-        String reMsj = StringCodify.codeToString(code);
+        char[] rechars = (char[])stringToArray(strNumFinal, "", true);
+        short[] recode = charsToCode(rechars);
+        String reMsj = codeToString(recode);
         if (encrypt) {
             reMsj = stringDecrypt(reMsj);
         }
