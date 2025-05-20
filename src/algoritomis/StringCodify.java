@@ -36,7 +36,7 @@ public abstract class StringCodify {
     public static final String MSK_MIN_REC = "eaosrnidlctump, ";
     public static final String MSK_MIN_EXT = "bgvyqhfzjñxkw_;:";
     public static final String MSK_MAY_REC = "EAOSRNIDLCTUMP\"\n";
-    public static final String MSK_MAY_EXT = "BGVYQHFZJÑXKW_;:";
+    public static final String MSK_MAY_EXT = "BGVYQHFZJÑXKW@ü\\";
     public static final String MSK_NUMEROS = "0123456789.$%-+/";
     public static final String MSK_EXT_ACE = "áéíóúÁÉÍÓÚ()¿?¡!";
     public static final String MSK_EXT_SYM = "[]{}=*|°#'&^<>¬~";
