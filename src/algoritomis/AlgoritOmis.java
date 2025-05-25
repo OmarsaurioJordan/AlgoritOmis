@@ -7,6 +7,11 @@ package algoritomis;
 public class AlgoritOmis {
 
     public static void main(String[] args) {
-        StringCodify.demo();
+        System.out.println("Omwekiatl algorithms\n");
+        // descomente alguna linea para probar ese algoritmo
+        
+        //StringCodify.demo();
+        //AwtTriangulo.run();
+        //SimpleLocalCRUD.run();
     }
 }
