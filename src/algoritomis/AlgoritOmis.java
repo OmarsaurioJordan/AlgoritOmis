@@ -13,5 +13,8 @@ public class AlgoritOmis {
         //StringCodify.demo();
         //AwtTriangulo.run();
         //SimpleLocalCRUD.run();
+        
+        Primos.printPrimos(100);
+        
     }
 }
