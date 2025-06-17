@@ -21,6 +21,8 @@ public class AlgoritOmis {
         //Primos.printPrimos(100);
         
         //MultiRusa.ciclo();
+        
+        //Modularin.mainloop();
     }
     
     public static void speedTest(int ciclos) {
